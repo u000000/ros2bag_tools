@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import Image
 import cv_bridge
 import cv2
 import numpy as np
@@ -14,20 +14,19 @@ class ExtractImagesNode(Node):
         self.bridge = cv_bridge.CvBridge()
         
         self.image_raw_subscriber_ = self.create_subscription(
-            CompressedImage, 
-            '/image_raw/compressed', 
+            Image, 
+            '/image_raw', 
             self.image_callback, 
             10)
         
         self.get_logger().info('Extraction has been started')
         
-    def image_callback(self, msg: CompressedImage):
+    def image_callback(self, msg: Image):
         try:
-            self.get_logger().info('Image being saved')
-            np_arr = np.frombuffer(msg.data, np.uint8)
-            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
-            cv2.imwrite('images/num_' + self.counter + '.png', cv_image)
+            cv_img = self.bridge.imgmsg_to_cv2(msg, 'mono16')
+            cv2.imwrite('num_' + str(self.counter) + '.png', cv_img)
             self.counter += 1
+            self.get_logger().info('Image saved: ' + 'num_' + str(self.counter) + '.png')
         except Exception as e:
             self.get_logger().error('Error processing image: %s' % str(e))
         
